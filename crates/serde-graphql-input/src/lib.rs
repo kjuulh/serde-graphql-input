@@ -118,7 +118,9 @@ where
     type SerializeStructVariant = Compount<'a, W, F>;
 
     fn serialize_bool(self, v: bool) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_bool(&mut self.writer, v)
+            .map_err(Error::io)
     }
 
     fn serialize_i8(self, v: i8) -> Result<()> {
@@ -852,6 +854,15 @@ pub trait Formatter {
         writer.write_all(s.as_bytes())
     }
 
+    fn write_bool<W>(&mut self, writer: &mut W, value: bool) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        let output = if value { b"true" as &[u8] } else { b"false" };
+
+        writer.write_all(output)
+    }
+
     fn write_null<W>(&mut self, writer: &mut W) -> io::Result<()>
     where
         W: ?Sized + io::Write,
@@ -1167,5 +1178,14 @@ mod tests {
         let output = super::to_string_pretty(&input).unwrap();
 
         assert_eq!(r#"42"#, output.as_str())
+    }
+
+    #[test]
+    fn can_handle_bool() {
+        let input = true;
+
+        let output = super::to_string_pretty(&input).unwrap();
+
+        assert_eq!(r#"true"#, output.as_str())
     }
 }
