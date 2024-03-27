@@ -134,7 +134,9 @@ where
     }
 
     fn serialize_i64(self, v: i64) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_i64(&mut self.writer, v)
+            .map_err(Error::io)
     }
 
     fn serialize_u8(self, v: u8) -> Result<()> {
@@ -841,6 +843,15 @@ impl<'a> Default for PrettyFormatter<'a> {
 impl<'a> Formatter for PrettyFormatter<'a> {}
 
 pub trait Formatter {
+    fn write_i64<W>(&mut self, writer: &mut W, value: i64) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        let mut buffer = itoa::Buffer::new();
+        let s = buffer.format(value);
+        writer.write_all(s.as_bytes())
+    }
+
     fn write_null<W>(&mut self, writer: &mut W) -> io::Result<()>
     where
         W: ?Sized + io::Write,
@@ -1147,5 +1158,14 @@ mod tests {
         let output = super::to_string_pretty(&input).unwrap();
 
         assert_eq!(r#""something""#, output.as_str())
+    }
+
+    #[test]
+    fn can_handle_i64() {
+        let input = 42_i64;
+
+        let output = super::to_string_pretty(&input).unwrap();
+
+        assert_eq!(r#"42"#, output.as_str())
     }
 }
