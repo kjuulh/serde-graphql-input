@@ -220,7 +220,26 @@ where
     where
         T: Serialize,
     {
-        todo!()
+        self.formatter
+            .begin_object(&mut self.writer)
+            .map_err(Error::io)?;
+        self.formatter
+            .begin_object_key(&mut self.writer, true)
+            .map_err(Error::io)?;
+        self.serialize_str(variant)?;
+        self.formatter
+            .end_object_key(&mut self.writer)
+            .map_err(Error::io)?;
+        self.formatter
+            .begin_object_value(&mut self.writer)
+            .map_err(Error::io)?;
+        value.serialize(&mut *self)?;
+        self.formatter
+            .end_object_value(&mut self.writer)
+            .map_err(Error::io)?;
+        self.formatter
+            .end_object(&mut self.writer)
+            .map_err(Error::io)
     }
 
     fn serialize_seq(
@@ -311,7 +330,20 @@ where
         variant: &'static str,
         len: usize,
     ) -> std::prelude::v1::Result<Self::SerializeStructVariant, Self::Error> {
-        todo!()
+        self.formatter
+            .begin_object(&mut self.writer)
+            .map_err(Error::io)?;
+        self.formatter
+            .begin_object_key(&mut self.writer, true)
+            .map_err(Error::io)?;
+        self.serialize_str(variant)?;
+        self.formatter
+            .end_object_key(&mut self.writer)
+            .map_err(Error::io)?;
+        self.formatter
+            .begin_object_value(&mut self.writer)
+            .map_err(Error::io)?;
+        self.serialize_map(Some(len))
     }
 }
 
@@ -566,11 +598,29 @@ where
     where
         T: Serialize,
     {
-        todo!()
+        match self {
+            Compount::Map { ser, state } => {
+                serde::ser::SerializeStruct::serialize_field(self, key, value)
+            }
+        }
     }
 
     fn end(self) -> Result<()> {
-        todo!()
+        match self {
+            Compount::Map { ser, state } => {
+                match state {
+                    State::Empty => {}
+                    _ => ser
+                        .formatter
+                        .end_object(&mut ser.writer)
+                        .map_err(Error::io)?,
+                }
+                ser.formatter
+                    .end_object_value(&mut ser.writer)
+                    .map_err(Error::io)?;
+                ser.formatter.end_object(&mut ser.writer).map_err(Error::io)
+            }
+        }
     }
 }
 
@@ -1014,5 +1064,36 @@ mod tests {
         let output = super::to_string_pretty(&input).unwrap();
 
         assert_eq!(r#"{items:["one","two","three","four"]}"#, output.as_str())
+    }
+
+    #[test]
+    fn can_handle_mixed_items() {
+        #[derive(Serialize, Clone, Debug)]
+        #[serde(untagged)]
+        enum VariantItem {
+            String(String),
+            Item { item: String },
+        }
+
+        #[derive(Serialize, Clone, Debug)]
+        struct Input {
+            items: Vec<VariantItem>,
+        }
+
+        let input = Input {
+            items: vec![
+                VariantItem::String("something".into()),
+                VariantItem::Item {
+                    item: "something".into(),
+                },
+            ],
+        };
+
+        let output = super::to_string_pretty(&input).unwrap();
+
+        assert_eq!(
+            r#"{items:["something",{item:"something"}]}"#,
+            output.as_str()
+        )
     }
 }
