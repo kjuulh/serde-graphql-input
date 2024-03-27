@@ -200,7 +200,9 @@ where
         variant_index: u32,
         variant: &'static str,
     ) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_string(&mut self.writer, variant)
+            .map_err(Error::io)
     }
 
     fn serialize_newtype_struct<T: ?Sized>(self, name: &'static str, value: &T) -> Result<()>
@@ -1095,5 +1097,27 @@ mod tests {
             r#"{items:["something",{item:"something"}]}"#,
             output.as_str()
         )
+    }
+
+    #[test]
+    fn can_handle_enums() {
+        #[derive(Serialize, Clone, Debug)]
+        enum VariantEnum {
+            ItemA,
+            ItemB,
+        }
+
+        #[derive(Serialize, Clone, Debug)]
+        struct Input {
+            items: Vec<VariantEnum>,
+        }
+
+        let input = Input {
+            items: vec![VariantEnum::ItemA, VariantEnum::ItemB],
+        };
+
+        let output = super::to_string_pretty(&input).unwrap();
+
+        assert_eq!(r#"{items:[ItemA,ItemB]}"#, output.as_str())
     }
 }
