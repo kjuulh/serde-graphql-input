@@ -264,9 +264,15 @@ where
             self.formatter
                 .end_object(&mut self.writer)
                 .map_err(Error::io)?;
-            Ok(Compount::Map { ser: self })
+            Ok(Compount::Map {
+                ser: self,
+                state: State::Empty,
+            })
         } else {
-            Ok(Compount::Map { ser: self })
+            Ok(Compount::Map {
+                ser: self,
+                state: State::First,
+            })
         }
     }
 
@@ -319,8 +325,18 @@ where
     formatter.write_string(writer, value)
 }
 
+#[derive(Eq, PartialEq)]
+pub enum State {
+    Empty,
+    First,
+    Rest,
+}
+
 pub enum Compount<'a, W: 'a, F: 'a> {
-    Map { ser: &'a mut Serializer<W, F> },
+    Map {
+        ser: &'a mut Serializer<W, F>,
+        state: State,
+    },
 }
 
 impl<'a, W, F> serde::ser::SerializeSeq for Compount<'a, W, F>
@@ -424,7 +440,17 @@ where
         T: Serialize,
     {
         match self {
-            Compount::Map { ser } => key.serialize(MapKeySerializer { ser: *ser }),
+            Compount::Map { ser, state } => {
+                ser.formatter
+                    .begin_object_key(&mut ser.writer, *state == State::First)
+                    .map_err(Error::io)?;
+                *state = State::Rest;
+
+                key.serialize(MapKeySerializer { ser: *ser })?;
+                ser.formatter
+                    .end_object_key(&mut ser.writer)
+                    .map_err(Error::io)
+            }
         }
     }
 
@@ -433,7 +459,7 @@ where
         T: Serialize,
     {
         match self {
-            Compount::Map { ser } => {
+            Compount::Map { ser, .. } => {
                 ser.formatter
                     .begin_object_value(&mut ser.writer)
                     .map_err(Error::io)?;
@@ -447,7 +473,9 @@ where
 
     fn end(self) -> Result<()> {
         match self {
-            Compount::Map { ser } => ser.formatter.end_object(&mut ser.writer).map_err(Error::io),
+            Compount::Map { ser, .. } => {
+                ser.formatter.end_object(&mut ser.writer).map_err(Error::io)
+            }
         }
     }
 }
@@ -756,6 +784,24 @@ pub trait Formatter {
         writer.write_all(b"\"")
     }
 
+    fn begin_object_key<W>(&mut self, writer: &mut W, first: bool) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        if !first {
+            writer.write_all(b",")
+        } else {
+            Ok(())
+        }
+    }
+
+    fn end_object_key<W>(&mut self, _writer: &mut W) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        Ok(())
+    }
+
     fn begin_object_value<W>(&mut self, writer: &mut W) -> io::Result<()>
     where
         W: ?Sized + io::Write,
@@ -803,5 +849,27 @@ mod tests {
         let output = super::to_string_pretty(&input).unwrap();
 
         assert_eq!(r#"{something:"Something"}"#, output.as_str())
+    }
+
+    #[test]
+    fn can_handle_multiple_values() {
+        #[derive(Serialize, Clone, Debug)]
+        struct Input {
+            something: String,
+            #[serde(rename = "somethingElse")]
+            something_else: String,
+        }
+
+        let input = Input {
+            something: "Something".into(),
+            something_else: "else".into(),
+        };
+
+        let output = super::to_string_pretty(&input).unwrap();
+
+        assert_eq!(
+            r#"{something:"Something",somethingElse:"else"}"#,
+            output.as_str()
+        )
     }
 }
