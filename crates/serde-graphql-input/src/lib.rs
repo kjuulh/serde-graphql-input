@@ -209,7 +209,7 @@ where
     where
         T: Serialize,
     {
-        todo!()
+        value.serialize(self)
     }
 
     fn serialize_newtype_variant<T: ?Sized>(
@@ -1135,5 +1135,17 @@ mod tests {
         let output = super::to_string_pretty(&input).unwrap();
 
         assert_eq!(r#"{items:["one","two"]}"#, output.as_str())
+    }
+
+    #[test]
+    fn can_handle_newtype_struct() {
+        #[derive(Serialize, Clone, Debug)]
+        struct Input(String);
+
+        let input = Input("something".into());
+
+        let output = super::to_string_pretty(&input).unwrap();
+
+        assert_eq!(r#""something""#, output.as_str())
     }
 }
