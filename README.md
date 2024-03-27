@@ -9,3 +9,4 @@ To get started with `serde-graphql-input`, first, add it as a dependency in your
 ```toml
 [dependencies]
 serde_graphql_input = "0.1.0"
+```
