@@ -227,7 +227,25 @@ where
         self,
         len: Option<usize>,
     ) -> std::prelude::v1::Result<Self::SerializeSeq, Self::Error> {
-        todo!()
+        self.formatter
+            .begin_array(&mut self.writer)
+            .map_err(Error::io)?;
+
+        if len == Some(0) {
+            self.formatter
+                .end_array(&mut self.writer)
+                .map_err(Error::io)?;
+
+            Ok(Compount::Map {
+                ser: self,
+                state: State::Empty,
+            })
+        } else {
+            Ok(Compount::Map {
+                ser: self,
+                state: State::First,
+            })
+        }
     }
 
     fn serialize_tuple(
@@ -356,11 +374,30 @@ where
     where
         T: Serialize,
     {
-        todo!()
+        match self {
+            Compount::Map { ser, state } => {
+                ser.formatter
+                    .begin_array_value(&mut ser.writer, *state == State::First)
+                    .map_err(Error::io)?;
+
+                *state = State::Rest;
+
+                value.serialize(&mut **ser)?;
+
+                ser.formatter
+                    .end_array_value(&mut ser.writer)
+                    .map_err(Error::io)
+            }
+        }
     }
 
     fn end(self) -> Result<()> {
-        todo!()
+        match self {
+            Compount::Map { ser, state } => match state {
+                State::Empty => Ok(()),
+                _ => ser.formatter.end_array(&mut ser.writer).map_err(Error::io),
+            },
+        }
     }
 }
 
@@ -773,6 +810,20 @@ pub trait Formatter {
         writer.write_all(b"}")
     }
 
+    fn begin_array<W>(&mut self, writer: &mut W) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        writer.write_all(b"[")
+    }
+
+    fn end_array<W>(&mut self, writer: &mut W) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        writer.write_all(b"]")
+    }
+
     fn begin_string<W>(&mut self, writer: &mut W) -> io::Result<()>
     where
         W: ?Sized + io::Write,
@@ -820,6 +871,23 @@ pub trait Formatter {
     }
 
     fn end_object_value<W>(&mut self, _writer: &mut W) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        Ok(())
+    }
+    fn begin_array_value<W>(&mut self, writer: &mut W, first: bool) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        if first {
+            Ok(())
+        } else {
+            writer.write_all(b",")
+        }
+    }
+
+    fn end_array_value<W>(&mut self, _writer: &mut W) -> io::Result<()>
     where
         W: ?Sized + io::Write,
     {
@@ -930,5 +998,21 @@ mod tests {
             r#"{nested:{item:"some nested item"},item:"some item"}"#,
             output.as_str()
         )
+    }
+
+    #[test]
+    fn can_handle_array() {
+        #[derive(Serialize, Clone, Debug)]
+        struct Input {
+            items: Vec<String>,
+        }
+
+        let input = Input {
+            items: vec!["one".into(), "two".into(), "three".into(), "four".into()],
+        };
+
+        let output = super::to_string_pretty(&input).unwrap();
+
+        assert_eq!(r#"{items:["one","two","three","four"]}"#, output.as_str())
     }
 }
