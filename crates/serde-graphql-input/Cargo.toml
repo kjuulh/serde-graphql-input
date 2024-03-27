@@ -1,7 +1,12 @@
 [package]
-name = "serde-graphql-input"
+name = "serde_graphql_input"
+description = "serde graphql input serializes to graphqls input objects, as used in graphql functions"
 version = "0.1.0"
 edition = "2021"
+readme = "../../README.md"
+license-file = "LICENSE"
+
+publish = true
 
 [dependencies]
 anyhow.workspace = true
