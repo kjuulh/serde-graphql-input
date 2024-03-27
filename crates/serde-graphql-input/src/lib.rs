@@ -273,7 +273,7 @@ where
         self,
         len: usize,
     ) -> std::prelude::v1::Result<Self::SerializeTuple, Self::Error> {
-        todo!()
+        self.serialize_seq(Some(len))
     }
 
     fn serialize_tuple_struct(
@@ -451,11 +451,11 @@ where
     where
         T: Serialize,
     {
-        todo!()
+        serde::ser::SerializeSeq::serialize_element(self, value)
     }
 
     fn end(self) -> Result<()> {
-        todo!()
+        serde::ser::SerializeSeq::end(self)
     }
 }
 impl<'a, W, F> serde::ser::SerializeTupleStruct for Compount<'a, W, F>
@@ -1119,5 +1119,21 @@ mod tests {
         let output = super::to_string_pretty(&input).unwrap();
 
         assert_eq!(r#"{items:[ItemA,ItemB]}"#, output.as_str())
+    }
+
+    #[test]
+    fn can_handle_tuples() {
+        #[derive(Serialize, Clone, Debug)]
+        struct Input {
+            items: (String, String),
+        }
+
+        let input = Input {
+            items: ("one".into(), "two".into()),
+        };
+
+        let output = super::to_string_pretty(&input).unwrap();
+
+        assert_eq!(r#"{items:["one","two"]}"#, output.as_str())
     }
 }
