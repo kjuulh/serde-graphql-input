@@ -174,18 +174,20 @@ where
     }
 
     fn serialize_none(self) -> Result<()> {
-        todo!()
+        self.serialize_unit()
     }
 
     fn serialize_some<T: ?Sized>(self, value: &T) -> Result<()>
     where
         T: Serialize,
     {
-        todo!()
+        value.serialize(self)
     }
 
     fn serialize_unit(self) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_null(&mut self.writer)
+            .map_err(Error::io)
     }
 
     fn serialize_unit_struct(self, name: &'static str) -> Result<()> {
@@ -473,9 +475,10 @@ where
 
     fn end(self) -> Result<()> {
         match self {
-            Compount::Map { ser, .. } => {
-                ser.formatter.end_object(&mut ser.writer).map_err(Error::io)
-            }
+            Compount::Map { ser, state } => match state {
+                State::Empty => Ok(()),
+                _ => ser.formatter.end_object(&mut ser.writer).map_err(Error::io),
+            },
         }
     }
 }
@@ -749,6 +752,13 @@ impl<'a> Default for PrettyFormatter<'a> {
 impl<'a> Formatter for PrettyFormatter<'a> {}
 
 pub trait Formatter {
+    fn write_null<W>(&mut self, writer: &mut W) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        writer.write_all(b"null")
+    }
+
     fn begin_object<W>(&mut self, writer: &mut W) -> io::Result<()>
     where
         W: ?Sized + io::Write,
@@ -869,6 +879,55 @@ mod tests {
 
         assert_eq!(
             r#"{something:"Something",somethingElse:"else"}"#,
+            output.as_str()
+        )
+    }
+
+    #[test]
+    fn can_handle_embedded_structs() {
+        #[derive(Serialize, Clone, Debug)]
+        struct Input {
+            nested: Option<Box<Input>>,
+            item: String,
+        }
+
+        let input = Input {
+            nested: Some(Box::new(Input {
+                nested: None,
+                item: "some nested item".into(),
+            })),
+            item: "some item".into(),
+        };
+
+        let output = super::to_string_pretty(&input).unwrap();
+
+        assert_eq!(
+            r#"{nested:{nested:null,item:"some nested item"},item:"some item"}"#,
+            output.as_str()
+        )
+    }
+
+    #[test]
+    fn can_handle_embedded_structs_omit() {
+        #[derive(Serialize, Clone, Debug)]
+        struct Input {
+            #[serde(skip_serializing_if = "Option::is_none")]
+            nested: Option<Box<Input>>,
+            item: String,
+        }
+
+        let input = Input {
+            nested: Some(Box::new(Input {
+                nested: None,
+                item: "some nested item".into(),
+            })),
+            item: "some item".into(),
+        };
+
+        let output = super::to_string_pretty(&input).unwrap();
+
+        assert_eq!(
+            r#"{nested:{item:"some nested item"},item:"some item"}"#,
             output.as_str()
         )
     }
