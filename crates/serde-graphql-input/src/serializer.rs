@@ -242,7 +242,7 @@ where
         name: &'static str,
         len: usize,
     ) -> std::prelude::v1::Result<Self::SerializeTupleStruct, Self::Error> {
-        todo!()
+        self.serialize_seq(Some(len))
     }
 
     fn serialize_tuple_variant(
@@ -579,16 +579,16 @@ where
 
     type Error = error::Error;
 
-    fn serialize_field<T>(&mut self, _value: &T) -> std::prelude::v1::Result<(), Self::Error>
+    fn serialize_field<T>(&mut self, value: &T) -> std::prelude::v1::Result<(), Self::Error>
     where
         T: Serialize,
         T: ?Sized,
     {
-        todo!()
+        serde::ser::SerializeSeq::serialize_element(self, value)
     }
 
     fn end(self) -> Result<()> {
-        todo!()
+        serde::ser::SerializeSeq::end(self)
     }
 }
 impl<'a, W, F> serde::ser::SerializeTupleVariant for Compount<'a, W, F>
