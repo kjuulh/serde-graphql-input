@@ -41,6 +41,33 @@ where
 }
 
 pub trait Formatter {
+    fn write_i8<W>(&mut self, writer: &mut W, value: i8) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        let mut buffer = itoa::Buffer::new();
+        let s = buffer.format(value);
+        writer.write_all(s.as_bytes())
+    }
+
+    fn write_i16<W>(&mut self, writer: &mut W, value: i16) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        let mut buffer = itoa::Buffer::new();
+        let s = buffer.format(value);
+        writer.write_all(s.as_bytes())
+    }
+
+    fn write_i32<W>(&mut self, writer: &mut W, value: i32) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        let mut buffer = itoa::Buffer::new();
+        let s = buffer.format(value);
+        writer.write_all(s.as_bytes())
+    }
+
     fn write_i64<W>(&mut self, writer: &mut W, value: i64) -> io::Result<()>
     where
         W: ?Sized + io::Write,
@@ -48,6 +75,56 @@ pub trait Formatter {
         let mut buffer = itoa::Buffer::new();
         let s = buffer.format(value);
         writer.write_all(s.as_bytes())
+    }
+
+    fn write_u8<W>(&mut self, writer: &mut W, value: u8) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        let mut buffer = itoa::Buffer::new();
+        let s = buffer.format(value);
+        writer.write_all(s.as_bytes())
+    }
+
+    fn write_u16<W>(&mut self, writer: &mut W, value: u16) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        let mut buffer = itoa::Buffer::new();
+        let s = buffer.format(value);
+        writer.write_all(s.as_bytes())
+    }
+
+    fn write_u32<W>(&mut self, writer: &mut W, value: u32) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        let mut buffer = itoa::Buffer::new();
+        let s = buffer.format(value);
+        writer.write_all(s.as_bytes())
+    }
+
+    fn write_u64<W>(&mut self, writer: &mut W, value: u64) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        let mut buffer = itoa::Buffer::new();
+        let s = buffer.format(value);
+        writer.write_all(s.as_bytes())
+    }
+
+    fn write_f32<W>(&mut self, writer: &mut W, value: f32) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        writer.write_all(format!("{value}").as_bytes())
+    }
+
+    fn write_f64<W>(&mut self, writer: &mut W, value: f64) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        writer.write_all(format!("{value}").as_bytes())
     }
 
     fn write_bool<W>(&mut self, writer: &mut W, value: bool) -> io::Result<()>
@@ -64,6 +141,13 @@ pub trait Formatter {
         W: ?Sized + io::Write,
     {
         writer.write_all(b"null")
+    }
+
+    fn write_char<W>(&mut self, writer: &mut W, value: char) -> io::Result<()>
+    where
+        W: ?Sized + io::Write,
+    {
+        writer.write_all(format!(r#"'{}'"#, value).as_bytes())
     }
 
     fn begin_object<W>(&mut self, writer: &mut W) -> io::Result<()>

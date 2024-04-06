@@ -56,15 +56,21 @@ where
     }
 
     fn serialize_i8(self, v: i8) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_i8(&mut self.writer, v)
+            .map_err(Error::io)
     }
 
     fn serialize_i16(self, v: i16) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_i16(&mut self.writer, v)
+            .map_err(Error::io)
     }
 
     fn serialize_i32(self, v: i32) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_i32(&mut self.writer, v)
+            .map_err(Error::io)
     }
 
     fn serialize_i64(self, v: i64) -> Result<()> {
@@ -74,31 +80,45 @@ where
     }
 
     fn serialize_u8(self, v: u8) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_u8(&mut self.writer, v)
+            .map_err(Error::io)
     }
 
     fn serialize_u16(self, v: u16) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_u16(&mut self.writer, v)
+            .map_err(Error::io)
     }
 
     fn serialize_u32(self, v: u32) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_u32(&mut self.writer, v)
+            .map_err(Error::io)
     }
 
     fn serialize_u64(self, v: u64) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_u64(&mut self.writer, v)
+            .map_err(Error::io)
     }
 
     fn serialize_f32(self, v: f32) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_f32(&mut self.writer, v)
+            .map_err(Error::io)
     }
 
     fn serialize_f64(self, v: f64) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_f64(&mut self.writer, v)
+            .map_err(Error::io)
     }
 
     fn serialize_char(self, v: char) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_char(&mut self.writer, v)
+            .map_err(Error::io)
     }
 
     fn serialize_str(self, v: &str) -> Result<()> {

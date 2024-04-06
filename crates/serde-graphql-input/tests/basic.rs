@@ -1,5 +1,7 @@
 use serde::Serialize;
 
+mod primitives;
+
 #[test]
 fn can_serialize_simple_struct() {
     #[derive(Serialize, Clone, Debug)]
