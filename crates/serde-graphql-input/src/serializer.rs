@@ -252,7 +252,20 @@ where
         variant: &'static str,
         len: usize,
     ) -> std::prelude::v1::Result<Self::SerializeTupleVariant, Self::Error> {
-        todo!()
+        self.formatter
+            .begin_object(&mut self.writer)
+            .map_err(Error::io)?;
+        self.formatter
+            .begin_object_key(&mut self.writer, true)
+            .map_err(Error::io)?;
+        self.serialize_str(variant)?;
+        self.formatter
+            .end_object_key(&mut self.writer)
+            .map_err(Error::io)?;
+        self.formatter
+            .begin_object_value(&mut self.writer)
+            .map_err(Error::io)?;
+        self.serialize_seq(Some(len))
     }
 
     fn serialize_map(
@@ -600,16 +613,31 @@ where
 
     type Error = error::Error;
 
-    fn serialize_field<T>(&mut self, _value: &T) -> std::prelude::v1::Result<(), Self::Error>
+    fn serialize_field<T>(&mut self, value: &T) -> std::prelude::v1::Result<(), Self::Error>
     where
         T: Serialize,
         T: ?Sized,
     {
-        todo!()
+        serde::ser::SerializeSeq::serialize_element(self, value)
     }
 
     fn end(self) -> Result<()> {
-        todo!()
+        match self {
+            Compount::Map { ser, state } => {
+                match state {
+                    State::Empty => {}
+                    _ => ser
+                        .formatter
+                        .end_array(&mut ser.writer)
+                        .map_err(Error::io)?,
+                }
+
+                ser.formatter
+                    .end_object_value(&mut ser.writer)
+                    .map_err(Error::io)?;
+                ser.formatter.end_object(&mut ser.writer).map_err(Error::io)
+            }
+        }
     }
 }
 
