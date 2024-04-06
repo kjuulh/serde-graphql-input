@@ -12,4 +12,16 @@ mod structs {
 
         assert_eq!(r#"null"#, output.as_str())
     }
+
+    #[test]
+    fn can_serialize_newtype_struct() {
+        #[derive(Serialize, Clone, Debug)]
+        struct Input(String);
+
+        let input = Input("something".into());
+
+        let output = serde_graphql_input::to_string_pretty(&input).unwrap();
+
+        assert_eq!(r#""something""#, output.as_str())
+    }
 }
