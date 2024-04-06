@@ -148,7 +148,9 @@ where
     }
 
     fn serialize_unit_struct(self, name: &'static str) -> Result<()> {
-        todo!()
+        self.formatter
+            .write_null(&mut self.writer)
+            .map_err(Error::io)
     }
 
     fn serialize_unit_variant(
