@@ -40,7 +40,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Run tests
-        run: cargo test --no-default-features --features all-static --workspace
+        run: cargo test --no-default-features --workspace
 
   rustfmt:
     name: Rustfmt
